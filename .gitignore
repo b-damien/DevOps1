@@ -1,0 +1,28 @@
+# Dependances
+node_modules/
+
+# Build Vite
+dist/
+
+# Variables d'environnement locales
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Fichiers systeme et editeur
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Fichiers temporaires
+*.tmp
+*.temp
