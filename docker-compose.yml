@@ -1,0 +1,7 @@
+services:
+  web:
+    build: .
+    image: labo-devops1
+    ports:
+      - "8080:80"
+    restart: always
