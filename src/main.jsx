@@ -28,6 +28,7 @@ const people = [
   { name: 'Nina', initials: 'NM', color: 'green' },
   { name: 'Léo', initials: 'LB', color: 'yellow' },
 ];
+
 function loadTasks() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -35,6 +36,15 @@ function loadTasks() {
   } catch {
     return [];
   }
+}
+
+function getFormattedDate() {
+  return new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date()).toUpperCase();
 }
 
 function Avatar({ name, size = 'small' }) {
@@ -46,38 +56,38 @@ function TaskCard({ task, onDelete, onEdit, onDragStart }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <article className="task-card" draggable onDragStart={(event) => onDragStart(event, task)}>
-      <div className="task-card-topline">
-        <span className={`tag tag-${task.tagTone}`}>{task.tag}</span>
-        <button className="icon-button subtle" type="button" aria-label={`Actions pour ${task.title}`} onClick={() => setIsMenuOpen((current) => !current)}>
-          <MoreHorizontal size={17} />
-        </button>
-        {isMenuOpen && <div className="task-menu"><button type="button" onClick={() => { onEdit(task); setIsMenuOpen(false); }}>Modifier</button><button type="button" className="danger-action" onClick={() => onDelete(task.id)}>Supprimer</button></div>}
-      </div>
-      <h3>{task.title}</h3>
-      <p>{task.description}</p>
-      <div className="task-card-footer">
-        <div className="task-meta"><CalendarDays size={14} /><span>{task.due}</span></div>
-        <div className="task-owner"><Avatar name={task.assignee} /><span>{task.assignee}</span></div>
-      </div>
-      <div className="priority-line"><span className={`priority-dot priority-${task.priority.toLowerCase()}`} />{task.priority}</div>
-    </article>
+      <article className="task-card" draggable onDragStart={(event) => onDragStart(event, task)}>
+        <div className="task-card-topline">
+          <span className={`tag tag-${task.tagTone}`}>{task.tag}</span>
+          <button className="icon-button subtle" type="button" aria-label={`Actions pour ${task.title}`} onClick={() => setIsMenuOpen((current) => !current)}>
+            <MoreHorizontal size={17} />
+          </button>
+          {isMenuOpen && <div className="task-menu"><button type="button" onClick={() => { onEdit(task); setIsMenuOpen(false); }}>Modifier</button><button type="button" className="danger-action" onClick={() => onDelete(task.id)}>Supprimer</button></div>}
+        </div>
+        <h3>{task.title}</h3>
+        <p>{task.description}</p>
+        <div className="task-card-footer">
+          <div className="task-meta"><CalendarDays size={14} /><span>{task.due}</span></div>
+          <div className="task-owner"><Avatar name={task.assignee} /><span>{task.assignee}</span></div>
+        </div>
+        <div className="priority-line"><span className={`priority-dot priority-${task.priority.toLowerCase()}`} />{task.priority}</div>
+      </article>
   );
 }
 
 function Column({ status, tasks, onDrop, onDelete, onEdit, onDragStart, onAdd }) {
   return (
-    <section className={`task-column column-${status.color}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => onDrop(event, status.id)}>
-      <div className="column-heading">
-        <div className="column-title"><span className={`status-mark status-${status.color}`} /><h2>{status.label}</h2><span className="task-count">{tasks.length}</span></div>
-      </div>
-      <p className="column-note">{status.note}</p>
-      <div className="column-tasks">
-        {tasks.map((task) => <TaskCard key={task.id} task={task} onDelete={onDelete} onEdit={onEdit} onDragStart={onDragStart} />)}
-        {tasks.length === 0 && <div className="drop-placeholder">Déposer une tâche ici</div>}
-      </div>
-      <button className="add-column-task" type="button" onClick={() => onAdd(status.id)}><CirclePlus size={16} /> Ajouter une tâche</button>
-    </section>
+      <section className={`task-column column-${status.color}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => onDrop(event, status.id)}>
+        <div className="column-heading">
+          <div className="column-title"><span className={`status-mark status-${status.color}`} /><h2>{status.label}</h2><span className="task-count">{tasks.length}</span></div>
+        </div>
+        <p className="column-note">{status.note}</p>
+        <div className="column-tasks">
+          {tasks.map((task) => <TaskCard key={task.id} task={task} onDelete={onDelete} onEdit={onEdit} onDragStart={onDragStart} />)}
+          {tasks.length === 0 && <div className="drop-placeholder">Déposer une tâche ici</div>}
+        </div>
+        <button className="add-column-task" type="button" onClick={() => onAdd(status.id)}><CirclePlus size={16} /> Ajouter une tâche</button>
+      </section>
   );
 }
 
@@ -89,6 +99,15 @@ function App() {
   const [editingTask, setEditingTask] = useState(null);
   const [newTask, setNewTask] = useState({ title: '', description: '', assignee: 'Camille', status: 'todo', priority: 'Moyenne', tag: 'Produit', due: 'Demain' });
   const [draggedTask, setDraggedTask] = useState(null);
+
+  const [currentDate, setCurrentDate] = useState(getFormattedDate);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDate(getFormattedDate());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)), [tasks]);
 
@@ -117,8 +136,8 @@ function App() {
     if (!newTask.title.trim()) return;
     const taskData = { ...newTask, description: newTask.description || 'Aucun détail ajouté.', tagTone: editingTask?.tagTone || 'violet' };
     setTasks((current) => editingTask
-      ? current.map((task) => task.id === editingTask.id ? { ...task, ...taskData } : task)
-      : [...current, { ...taskData, id: Date.now() }]);
+        ? current.map((task) => task.id === editingTask.id ? { ...task, ...taskData } : task)
+        : [...current, { ...taskData, id: Date.now() }]);
     setNewTask({ title: '', description: '', assignee: 'Camille', status: 'todo', priority: 'Moyenne', tag: 'Produit', due: 'Demain' });
     setEditingTask(null);
     setIsModalOpen(false);
@@ -160,29 +179,159 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand"><span className="brand-mark"><Sparkles size={17} /></span><span>atelier</span></div>
-        <div className="workspace-switcher"><span className="workspace-avatar">A</span><span><strong>Atelier studio</strong><small>Espace de travail</small></span></div>
-        <nav className="main-nav" aria-label="Navigation principale">
-          <a className="nav-item active" href="#taches"><LayoutGrid size={18} />Vue d’ensemble</a>
-          <a className="nav-item" href="#taches"><ClipboardList size={18} />Mes tâches<span className="nav-badge">{tasks.length}</span></a>
-        </nav>
-      </aside>
+      <div className="app-shell">
+        <aside className="sidebar">
+          <div className="brand"><span className="brand-mark"><Sparkles size={17} /></span><span>atelier</span></div>
+          <div className="workspace-switcher"><span className="workspace-avatar">A</span><span><strong>Atelier studio</strong><small>Espace de travail</small></span></div>
+          <nav className="main-nav" aria-label="Navigation principale">
+            <a className="nav-item active" href="#taches"><LayoutGrid size={18} />Vue d’ensemble</a>
+            <a className="nav-item" href="#taches"><ClipboardList size={18} />Mes tâches<span className="nav-badge">{tasks.length}</span></a>
+          </nav>
+        </aside>
 
-      <main className="main-content" id="taches">
-        <header className="topbar"><div className="breadcrumb"><strong>Mes tâches</strong></div></header>
-        <div className="content-wrap">
-          <section className="page-intro"><div><div className="eyebrow"><span className="eyebrow-line" />MERCREDI 16 SEPTEMBRE 2026</div><h1>Bonjour Namien, Iuliette, Nlorian et Aofie <span className="wave">✦</span></h1><p>Voici ce qui se passe dans ton équipe aujourd’hui.</p></div><button className="primary-button" type="button" onClick={() => openTaskModal()}><CirclePlus size={18} />Nouvelle tâche</button></section>
-          <section className="summary-strip"><div className="summary-main"><div className="summary-icon"><Check size={20} /></div><div><strong>{completed} tâche{completed > 1 ? 's' : ''} terminée{completed > 1 ? 's' : ''}</strong><span>{tasks.length ? 'Tu avances bien, continue comme ça.' : 'Crée ta première tâche pour commencer.'}</span></div></div><div className="progress-wrap"><div className="progress-label"><span>Progression de l’espace</span><strong>{progress}%</strong></div><div className="progress-bar"><span style={{ width: `${progress}%` }} /></div></div><div className="summary-stat"><span>À faire cette semaine</span><strong>{tasks.length - completed}<small> tâche{tasks.length - completed > 1 ? 's' : ''}</small></strong></div></section>
-          <section className="toolbar"><div className="toolbar-actions"><div className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une tâche..." /></div><div className="filter-select"><UserRound size={16} /><select value={selectedPerson} onChange={(event) => setSelectedPerson(event.target.value)} aria-label="Filtrer par personne">{people.map((person) => <option key={person.name}>{person.name}</option>)}</select><ChevronDown size={14} /></div></div></section>
-          <div className="board-header"><div><h2>Les tâches de l’équipe</h2><span>{visibleTasks.length} tâche{visibleTasks.length > 1 ? 's' : ''} au total</span></div></div>
-          <div className="board">{statuses.map((status) => <Column key={status.id} status={status} tasks={visibleTasks.filter((task) => task.status === status.id)} onDrop={handleDrop} onDelete={handleDelete} onEdit={openEditModal} onDragStart={(_, task) => setDraggedTask(task)} onAdd={openNewTaskModal} />)}</div>
-        </div>
-      </main>
-      {isModalOpen && <div className="modal-backdrop" onMouseDown={handleModalBackdrop}><form className="modal" onSubmit={handleCreate} onMouseDown={(event) => event.stopPropagation()}><div className="modal-header"><div><span className="eyebrow">{editingTask ? 'MODIFIER LA TÂCHE' : 'NOUVELLE TÂCHE'}</span><h2>{editingTask ? 'Modifier la tâche' : 'Ajouter une tâche'}</h2></div><button className="icon-button" type="button" aria-label="Fermer" onClick={handleModalClose}><X size={18} /></button></div><label>Titre<input autoFocus required value={newTask.title} onChange={(event) => setNewTask({ ...newTask, title: event.target.value })} placeholder="Ex. Préparer le brief" /></label><label>Description<textarea value={newTask.description} onChange={(event) => setNewTask({ ...newTask, description: event.target.value })} placeholder="Un peu de contexte..." rows="3" /></label><div className="form-grid"><label>Assignée à<select value={newTask.assignee} onChange={(event) => setNewTask({ ...newTask, assignee: event.target.value })}>{people.slice(1).map((person) => <option key={person.name}>{person.name}</option>)}</select></label><label>Statut<select value={newTask.status} onChange={(event) => setNewTask({ ...newTask, status: event.target.value })}>{statuses.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}</select></label><label>Priorité<select value={newTask.priority} onChange={(event) => setNewTask({ ...newTask, priority: event.target.value })}><option>Haute</option><option>Moyenne</option><option>Basse</option></select></label><label>Échéance<select value={newTask.due} onChange={(event) => setNewTask({ ...newTask, due: event.target.value })}><option>Aujourd’hui</option><option>Demain</option><option>Cette semaine</option></select></label></div><div className="modal-actions"><button className="secondary-button" type="button" onClick={handleModalCancel}>Annuler</button><button className="primary-button" type="submit"><CirclePlus size={17} />{editingTask ? 'Enregistrer' : 'Créer la tâche'}</button></div></form></div>}
-    </div>
+        <main className="main-content" id="taches">
+          <header className="topbar"><div className="breadcrumb"><strong>Mes tâches</strong></div></header>
+          <div className="content-wrap">
+            <section className="page-intro">
+              <div>
+                {/* Date dynamique insérée ici */}
+                <div className="eyebrow"><span className="eyebrow-line" />{currentDate}</div>
+                <h1>Bonjour Namien, Iuliette, Nlorian et Aofie <span className="wave">✦</span></h1>
+                <p>Voici ce qui se passe dans ton équipe aujourd’hui.</p>
+              </div>
+              <button className="primary-button" type="button" onClick={() => openTaskModal()}>
+                <CirclePlus size={18} />Nouvelle tâche
+              </button>
+            </section>
+
+            <section className="summary-strip">
+              <div className="summary-main">
+                <div className="summary-icon"><Check size={20} /></div>
+                <div>
+                  <strong>{completed} tâche{completed > 1 ? 's' : ''} terminée{completed > 1 ? 's' : ''}</strong>
+                  <span>{tasks.length ? 'Tu avances bien, continue comme ça.' : 'Crée ta première tâche pour commencer.'}</span>
+                </div>
+              </div>
+              <div className="progress-wrap">
+                <div className="progress-label">
+                  <span>Progression de l’espace</span>
+                  <strong>{progress}%</strong>
+                </div>
+                <div className="progress-bar">
+                  <span style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+              <div className="summary-stat">
+                <span>À faire cette semaine</span>
+                <strong>{tasks.length - completed}<small> tâche{tasks.length - completed > 1 ? 's' : ''}</small></strong>
+              </div>
+            </section>
+
+            <section className="toolbar">
+              <div className="toolbar-actions">
+                <div className="search-field">
+                  <Search size={16} />
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une tâche..." />
+                </div>
+                <div className="filter-select">
+                  <UserRound size={16} />
+                  <select value={selectedPerson} onChange={(event) => setSelectedPerson(event.target.value)} aria-label="Filtrer par personne">
+                    {people.map((person) => <option key={person.name}>{person.name}</option>)}
+                  </select>
+                  <ChevronDown size={14} />
+                </div>
+              </div>
+            </section>
+
+            <div className="board-header">
+              <div>
+                <h2>Les tâches de l’équipe</h2>
+                <span>{visibleTasks.length} tâche{visibleTasks.length > 1 ? 's' : ''} au total</span>
+              </div>
+            </div>
+
+            <div className="board">
+              {statuses.map((status) => (
+                  <Column
+                      key={status.id}
+                      status={status}
+                      tasks={visibleTasks.filter((task) => task.status === status.id)}
+                      onDrop={handleDrop}
+                      onDelete={handleDelete}
+                      onEdit={openEditModal}
+                      onDragStart={(_, task) => setDraggedTask(task)}
+                      onAdd={openNewTaskModal}
+                  />
+              ))}
+            </div>
+          </div>
+        </main>
+
+        {isModalOpen && (
+            <div className="modal-backdrop" onMouseDown={handleModalBackdrop}>
+              <form className="modal" onSubmit={handleCreate} onMouseDown={(event) => event.stopPropagation()}>
+                <div className="modal-header">
+                  <div>
+                    <span className="eyebrow">{editingTask ? 'MODIFIER LA TÂCHE' : 'NOUVELLE TÂCHE'}</span>
+                    <h2>{editingTask ? 'Modifier la tâche' : 'Ajouter une tâche'}</h2>
+                  </div>
+                  <button className="icon-button" type="button" aria-label="Fermer" onClick={handleModalClose}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <label>
+                  Titre
+                  <input autoFocus required value={newTask.title} onChange={(event) => setNewTask({ ...newTask, title: event.target.value })} placeholder="Ex. Préparer le brief" />
+                </label>
+                <label>
+                  Description
+                  <textarea value={newTask.description} onChange={(event) => setNewTask({ ...newTask, description: event.target.value })} placeholder="Un peu de contexte..." rows="3" />
+                </label>
+                <div className="form-grid">
+                  <label>
+                    Assignée à
+                    <select value={newTask.assignee} onChange={(event) => setNewTask({ ...newTask, assignee: event.target.value })}>
+                      {people.slice(1).map((person) => <option key={person.name}>{person.name}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    Statut
+                    <select value={newTask.status} onChange={(event) => setNewTask({ ...newTask, status: event.target.value })}>
+                      {statuses.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    Priorité
+                    <select value={newTask.priority} onChange={(event) => setNewTask({ ...newTask, priority: event.target.value })}>
+                      <option>Haute</option>
+                      <option>Moyenne</option>
+                      <option>Basse</option>
+                    </select>
+                  </label>
+                  <label>
+                    Échéance
+                    <select value={newTask.due} onChange={(event) => setNewTask({ ...newTask, due: event.target.value })}>
+                      <option>Aujourd’hui</option>
+                      <option>Demain</option>
+                      <option>Cette semaine</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="modal-actions">
+                  <button className="secondary-button" type="button" onClick={handleModalCancel}>Annuler</button>
+                  <button className="primary-button" type="submit">
+                    <CirclePlus size={17} />{editingTask ? 'Enregistrer' : 'Créer la tâche'}
+                  </button>
+                </div>
+              </form>
+            </div>
+        )}
+      </div>
   );
 }
 
-createRoot(document.getElementById('root')).render(<StrictMode><App /></StrictMode>);
+createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+);
