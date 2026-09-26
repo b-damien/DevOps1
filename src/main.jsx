@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useMemo, useState } from 'react';
+import React, { StrictMode, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   CalendarDays,
@@ -14,8 +14,8 @@ import {
   X,
 } from 'lucide-react';
 import './styles.css';
+import { filterTasks, getFormattedDate, getProgress, loadTasks, STORAGE_KEY } from './taskUtils';
 
-const STORAGE_KEY = 'atelier-taches-v2';
 const statuses = [
   { id: 'todo', label: 'À faire', color: 'yellow', note: 'À préparer' },
   { id: 'doing', label: 'En cours', color: 'blue', note: 'En mouvement' },
@@ -28,24 +28,6 @@ const people = [
   { name: 'Nina', initials: 'NM', color: 'green' },
   { name: 'Léo', initials: 'LB', color: 'yellow' },
 ];
-
-function loadTasks() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch {
-    return [];
-  }
-}
-
-function getFormattedDate() {
-  return new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date()).toUpperCase();
-}
 
 function Avatar({ name, size = 'small' }) {
   const person = people.find((item) => item.name === name) || people[0];
@@ -111,15 +93,10 @@ function App() {
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)), [tasks]);
 
-  const visibleTasks = useMemo(() => tasks.filter((task) => {
-    const matchesPerson = selectedPerson === 'Tous' || task.assignee === selectedPerson;
-    const normalizedQuery = query.toLowerCase();
-    const matchesQuery = !normalizedQuery || `${task.title} ${task.description} ${task.tag}`.toLowerCase().includes(normalizedQuery);
-    return matchesPerson && matchesQuery;
-  }), [tasks, selectedPerson, query]);
+  const visibleTasks = useMemo(() => filterTasks(tasks, { selectedPerson, query }), [tasks, selectedPerson, query]);
 
   const completed = tasks.filter((task) => task.status === 'done').length;
-  const progress = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
+  const progress = getProgress(tasks);
 
   function handleDrop(event, status) {
     event.preventDefault();
@@ -330,8 +307,14 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')).render(
-    <StrictMode>
-      <App />
-    </StrictMode>
-);
+const rootElement = document.getElementById('root');
+
+if (rootElement) {
+  createRoot(rootElement).render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+  );
+}
+
+export { App, statuses, people, STORAGE_KEY, loadTasks, getFormattedDate };
