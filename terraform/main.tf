@@ -113,7 +113,8 @@ resource "aws_codebuild_project" "app_build" {
 
   source {
     type = "GITHUB"
-    # On mettra l'URL de ton repo GitHub ici à l'étape suivante
+    location        = "https://github.com/b-damien/DevOps1.git"
+    git_clone_depth = 1
   }
 
   environment {
