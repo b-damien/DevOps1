@@ -26,3 +26,13 @@ ressource "aws_security_group" "web_sg" {
     }
 }
 
+resource "aws_instance" "web" {
+  ami                    = "ami-0f7cd40eac2214b37" # Ubuntu 22.04 LTS, région eu-west-3
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.web_sg.id]
+
+  tags = {
+    Name = "web-server-react"
+  }
+}
