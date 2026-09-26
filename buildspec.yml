@@ -3,14 +3,14 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Connexion à Amazon ECR...
+      - echo "Connexion à Amazon ECR..."
       - aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 236287214134.dkr.ecr.eu-west-3.amazonaws.com
       - REPOSITORY_URI=236287214134.dkr.ecr.eu-west-3.amazonaws.com/mon-app-react
   build:
     commands:
-      - echo Construction de l'image Docker...
+      - echo "Construction de l'image Docker..."
       - docker build -t $REPOSITORY_URI:latest .
   post_build:
     commands:
-      - echo Envoi de l'image vers ECR...
+      - echo "Envoi de l'image vers ECR..."
       - docker push $REPOSITORY_URI:latest
