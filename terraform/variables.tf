@@ -7,4 +7,5 @@ variable "instance_type" {
 variable "key_name" {
     description = "Nom de la paire de clés SSH AWS"
     type = string
+    default = "devops-key"
 }
