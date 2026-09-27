@@ -103,3 +103,4 @@ git add .
 git commit -m "Met a jour le gestionnaire de taches"
 git push origin main
 ```
+Test3 : Vérifions que le push ne déclenche pas le pipeline
