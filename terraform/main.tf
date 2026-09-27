@@ -157,11 +157,11 @@ resource "aws_iam_role" "codedeploy_role" {
 resource "aws_iam_role_policy_attachment" "codedeploy_service_policy" {
   role       = aws_iam_role.codedeploy_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
+}
 
-  resource "aws_iam_role_policy_attachment" "codedeploy_s3_access" {
+resource "aws_iam_role_policy_attachment" "codedeploy_s3_access" {
   role       = aws_iam_role.codedeploy_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
 }
 
 resource "aws_codedeploy_app" "app" {
