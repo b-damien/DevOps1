@@ -2,10 +2,11 @@
 REPOSITORY_URI=236287214134.dkr.ecr.eu-west-3.amazonaws.com/mon-app-react
 
 /usr/local/bin/aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 236287214134.dkr.ecr.eu-west-3.amazonaws.com
-docker pull $REPOSITORY_URI:latest
 
-NEW_IMAGE_ID=$(docker images -q $REPOSITORY_URI:latest)
-RUNNING_IMAGE_ID=$(docker inspect --format='{{.Image}}' mon-app-container 2>/dev/null | cut -c 8-19)
+RUNNING_IMAGE_ID=$(docker inspect --format='{{.Image}}' mon-app-container 2>/dev/null)
+
+docker pull $REPOSITORY_URI:latest
+NEW_IMAGE_ID=$(docker inspect --format='{{.Id}}' $REPOSITORY_URI:latest)
 
 if [ "$NEW_IMAGE_ID" == "$RUNNING_IMAGE_ID" ]; then
     echo "Image identique, aucun redémarrage nécessaire."
