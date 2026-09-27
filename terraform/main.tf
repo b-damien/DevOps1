@@ -77,6 +77,11 @@ resource "aws_iam_role_policy_attachment" "ecr_read_only" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+resource "aws_iam_role_policy_attachment" "ec2_codedeploy_access" {
+  role       = aws_iam_role.ec2_ecr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployFullAccess"
+}
+
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2-ecr-profile"
   role = aws_iam_role.ec2_ecr_role.name
@@ -127,4 +132,43 @@ resource "aws_codebuild_project" "app_build" {
   artifacts {
     type = "NO_ARTIFACTS"
   }
+}
+
+resource "aws_iam_role" "codedeploy_role" {
+  name = "codedeploy-service-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "codedeploy.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "codedeploy_service_policy" {
+  role       = aws_iam_role.codedeploy_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
+}
+
+resource "aws_codedeploy_app" "app" {
+  name             = "mon-app-react"
+  compute_platform = "Server"
+}
+
+resource "aws_codedeploy_deployment_group" "deployment_group" {
+  app_name              = aws_codedeploy_app.app.name
+  deployment_group_name = "mon-app-react-deployment-group"
+  service_role_arn      = aws_iam_role.codedeploy_role.arn
+
+  ec2_tag_filter {
+    key   = "Name"
+    type  = "KEY_AND_VALUE"
+    value = "web-server-react"
+  }
+
+  deployment_config_name = "CodeDeployDefault.AllAtOnce"
 }
