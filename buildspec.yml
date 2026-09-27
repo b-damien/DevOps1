@@ -6,6 +6,7 @@ phases:
       - echo "Connexion à Amazon ECR..."
       - aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 236287214134.dkr.ecr.eu-west-3.amazonaws.com
       - REPOSITORY_URI=236287214134.dkr.ecr.eu-west-3.amazonaws.com/mon-app-react
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
   build:
     commands:
       - echo "Construction de l'image Docker..."
@@ -14,3 +15,4 @@ phases:
     commands:
       - echo "Envoi de l'image vers ECR..."
       - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
