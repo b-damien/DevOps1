@@ -215,6 +215,7 @@ resource "aws_s3_bucket" "pipeline_artifacts" {
 resource "aws_codepipeline" "app_pipeline" {
   name     = "mon-app-react-pipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
+  pipeline_type = "V2"
 
   artifact_store {
     location = aws_s3_bucket.pipeline_artifacts.bucket
