@@ -1,8 +1,14 @@
 version: 0.2
 
 phases:
+  install:
+    commands:
+      - echo "Installation des dépendances..."
+      - npm install
   pre_build:
     commands:
+      - echo "Exécution des tests..."
+      - npm test
       - echo "Connexion à Amazon ECR..."
       - aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin 236287214134.dkr.ecr.eu-west-3.amazonaws.com
       - REPOSITORY_URI=236287214134.dkr.ecr.eu-west-3.amazonaws.com/mon-app-react
