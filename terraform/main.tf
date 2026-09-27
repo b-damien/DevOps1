@@ -82,6 +82,11 @@ resource "aws_iam_role_policy_attachment" "ec2_codedeploy_access" {
   policy_arn = "arn:aws:iam::aws:policy/AWSCodeDeployFullAccess"
 }
 
+resource "aws_iam_role_policy_attachment" "ec2_s3_access" {
+  role       = aws_iam_role.ec2_ecr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2-ecr-profile"
   role = aws_iam_role.ec2_ecr_role.name
@@ -122,9 +127,7 @@ resource "aws_codebuild_project" "app_build" {
   service_role = aws_iam_role.codebuild_role.arn
 
   source {
-    type = "GITHUB"
-    location        = "https://github.com/b-damien/DevOps1.git"
-    git_clone_depth = 1
+    type = "CODEPIPELINE"
   }
 
   environment {
@@ -135,7 +138,7 @@ resource "aws_codebuild_project" "app_build" {
   }
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "CODEPIPELINE"
   }
 }
 

@@ -173,7 +173,7 @@ function App() {
               <div>
                 {/* Date dynamique insérée ici */}
                 <div className="eyebrow"><span className="eyebrow-line" />{currentDate}</div>
-                <h1>Bonjour Namien, Iuliette, Nlorian et Aofie <span className="wave">✦</span></h1>
+                <h1>Bonjour Namien, Iuliette, Florian et Aofie <span className="wave">✦</span></h1>
                 <p>Voici ce qui se passe dans ton équipe aujourd’hui.</p>
               </div>
               <button className="primary-button" type="button" onClick={() => openTaskModal()}>
