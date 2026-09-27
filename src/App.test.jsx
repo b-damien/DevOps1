@@ -52,7 +52,7 @@ describe('taskUtils', () => {
 
     const tasks = JSON.parse(localStorage.getItem(STORAGE_KEY));
 
-    expect(tasks).toHaveLength(999);
+    expect(tasks).toHaveLength(3);
     expect(tasks[0].title).toBe('Réunion produit');
   });
 
