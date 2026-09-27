@@ -300,10 +300,6 @@ resource "aws_codepipeline" "app_pipeline" {
         branches {
           includes = ["main"]
         }
-        file_paths {
-          includes = ["src/**", "Dockerfile", "package*.json", "appspec.yml", "buildspec.yml", "scripts/**", "index.html", "vite.config.js"]
-          excludes = ["terraform/**", "README.md"]
-        }
       }
     }
   }
