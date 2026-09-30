@@ -14,5 +14,14 @@ else
     echo "Nouvelle image détectée, redémarrage du conteneur."
     docker stop mon-app-container 2>/dev/null
     docker rm -f mon-app-container 2>/dev/null
-    docker run -d -p 80:80 --restart unless-stopped --name mon-app-container $REPOSITORY_URI:latest
+    docker run -d \
+      --name mon-app-container \
+      --network web \
+      --restart unless-stopped \
+      --label "traefik.enable=true" \
+      --label "traefik.http.routers.monapp.rule=Host(\`mon-app-react.ainz05.com\`)" \
+      --label "traefik.http.routers.monapp.entrypoints=websecure" \
+      --label "traefik.http.routers.monapp.tls.certresolver=myresolver" \
+      --label "traefik.http.services.monapp.loadbalancer.server.port=80" \
+      $REPOSITORY_URI:latest
 fi
