@@ -1,106 +1,195 @@
-# Atelier - Gestionnaire de taches
+# Atelier - Gestionnaire de tâches
 
-Application web React permettant de gerer simplement des taches dans trois colonnes : **A faire**, **En cours** et **Terminees**.
+Application web React permettant de gérer simplement des tâches dans trois colonnes : **À faire**, **En cours** et **Terminées**.
 
-Les taches sont sauvegardees automatiquement dans le `localStorage` du navigateur.
+Le projet sert de support à un labo DevOps : l'application est conteneurisée avec Docker, l'infrastructure AWS est décrite avec Terraform et chaque push sur `main` déclenche un pipeline CI/CD (CodePipeline → CodeBuild → CodeDeploy) qui teste, construit et déploie automatiquement l'application sur une instance EC2.
 
-## Fonctionnalites
+Application en ligne : https://mon-app-react.ainz05.com
 
-- Creer une tache avec un titre, une description, une personne assignee, un statut, une priorite et une echeance.
-- Modifier une tache depuis le menu `...`.
-- Supprimer une tache depuis le menu `...`.
-- Deplacer une tache entre les colonnes avec le glisser-deposer.
-- Rechercher une tache.
-- Filtrer les taches par personne.
-- Suivre la progression des taches terminees.
+## Sommaire
 
-## Prerequis
+- [Fonctionnalités](#fonctionnalités)
+- [Stack technique](#stack-technique)
+- [Structure du projet](#structure-du-projet)
+- [Lancer le projet en local](#lancer-le-projet-en-local)
+- [Tests](#tests)
+- [Docker](#docker)
+- [Infrastructure AWS (Terraform)](#infrastructure-aws-terraform)
+- [Pipeline CI/CD](#pipeline-cicd)
 
-- Node.js 18 ou une version plus recente.
-- npm, installe avec Node.js.
+## Fonctionnalités
 
-Verifier les versions :
+- Créer une tâche avec un titre, une description, une personne assignée, un statut, une priorité et une échéance.
+- Modifier ou supprimer une tâche depuis le menu `...`.
+- Déplacer une tâche entre les colonnes avec le glisser-déposer.
+- Rechercher une tâche et filtrer par personne.
+- Suivre la progression des tâches terminées.
+- Sauvegarde automatique dans le `localStorage` du navigateur.
 
-```bash
-node --version
-npm --version
+## Stack technique
+
+| Domaine | Outils |
+| --- | --- |
+| Front-end | React, Vite, lucide-react |
+| Tests | Vitest, Testing Library, jsdom |
+| Conteneur | Docker (build multi-étapes Node 20 → Nginx) |
+| Infrastructure | Terraform, AWS (EC2, Elastic IP, ECR, IAM, S3) |
+| CI/CD | AWS CodePipeline, CodeBuild, CodeDeploy |
+| Reverse proxy / HTTPS | Traefik v3 + Let's Encrypt |
+
+## Structure du projet
+
+```text
+.
+├── src/
+│   ├── main.jsx            # Composants React et logique de l'application
+│   ├── taskUtils.js        # Fonctions utilitaires (chargement, filtres, progression)
+│   ├── styles.css          # Styles de l'interface
+│   ├── App.test.jsx        # Tests unitaires et d'intégration
+│   └── setupTests.js       # Configuration de Testing Library
+├── scripts/
+│   ├── start_container.sh  # Hook CodeDeploy : récupère l'image ECR et (re)lance le conteneur
+│   └── stop_container.sh   # Hook CodeDeploy : sans effet (logique gérée dans start)
+├── terraform/
+│   ├── provider.tf         # Provider AWS (région eu-west-3)
+│   ├── variables.tf        # Type d'instance et clé SSH
+│   ├── main.tf             # Ressources AWS et pipeline
+│   ├── outputs.tf          # IP publique et URL du dépôt ECR
+│   └── install_docker.sh   # user_data de l'EC2 (Docker, AWS CLI, agent CodeDeploy, Traefik)
+├── Dockerfile
+├── docker-compose.yml
+├── buildspec.yml           # Étapes CodeBuild
+└── appspec.yml             # Étapes CodeDeploy
 ```
 
-## Installation
+## Lancer le projet en local
 
-Cloner le projet puis entrer dans son dossier :
+Prérequis : Node.js 20.19 ou plus récent (exigé par Vite 7 et Vitest 4), et npm.
 
 ```bash
 git clone <URL_DU_DEPOT>
-cd atelier-taches
-```
-
-Installer les dependances :
-
-```bash
+cd DevOps1
 npm install
-```
-
-Sous Windows PowerShell, utiliser `npm.cmd install` si la commande `npm` est bloquee par la politique d'execution PowerShell.
-
-## Lancer le projet en developpement
-
-```bash
 npm run dev
 ```
 
-Puis ouvrir l'URL indiquee par Vite, generalement :
+L'application est ensuite disponible sur l'URL indiquée par Vite, généralement http://localhost:5173/.
 
-```text
-http://localhost:5173/
-```
+Sous Windows PowerShell, utiliser `npm.cmd` à la place de `npm` si la politique d'exécution bloque la commande.
 
-Sous Windows PowerShell, l'equivalent est :
-
-```bash
-npm.cmd run dev
-```
-
-## Tester la version de production
-
-Compiler le projet :
+Pour tester la version de production :
 
 ```bash
 npm run build
-```
-
-Lancer le serveur de previsualisation :
-
-```bash
 npm run preview
 ```
 
-## Developpement
-
-Les fichiers principaux sont dans `src/` :
-
-- `src/main.jsx` : composants React et logique de l'application.
-- `src/styles.css` : styles de l'interface.
-
-Pour arreter le serveur de developpement, utiliser `Ctrl + C` dans le terminal.
-
-## Envoyer le projet sur GitHub
-
-Le fichier `.gitignore` exclut les dependances, les fichiers de build, les variables d'environnement et les fichiers temporaires. Il faut bien versionner `package.json` et `package-lock.json` afin que les autres puissent installer exactement les dependances du projet.
+## Tests
 
 ```bash
-git add .
-git commit -m "Initialise le gestionnaire de taches"
-git branch -M main
-git remote add origin <URL_DU_DEPOT>
-git push -u origin main
+npm test             # exécution unique (utilisée par le pipeline)
+npm run test:watch   # mode surveillance pendant le développement
 ```
 
-Si le depot distant existe deja :
+Les tests couvrent :
+
+- le chargement des tâches depuis le `localStorage` ;
+- le filtrage par personne et par mot-clé ;
+- l'affichage des tâches enregistrées dans le tableau ;
+- la création d'une tâche depuis la fenêtre modale ;
+- le filtrage combiné recherche + personne dans l'interface.
+
+Le pipeline exécute `npm test` **avant** de construire l'image : si un test échoue, aucune image n'est construite ni déployée.
+
+## Docker
+
+Le `Dockerfile` utilise un build multi-étapes :
+
+1. `node:20-alpine` installe les dépendances et compile l'application (`npm run build`) ;
+2. `nginx:alpine` sert uniquement le dossier `dist/` généré, sur le port 80.
+
+Lancer l'application avec Docker Compose :
 
 ```bash
-git add .
-git commit -m "Met a jour le gestionnaire de taches"
-git push origin main
+docker compose up --build
 ```
-Test3 : Vérifions que le push ne déclenche pas le pipeline
+
+L'application est alors accessible sur http://localhost:8080.
+
+## Infrastructure AWS (Terraform)
+
+L'infrastructure est décrite dans le dossier `terraform/`, dans la région `eu-west-3` (Paris). Seule la connexion GitHub de CodePipeline est créée à la main (voir plus bas).
+
+| Ressource | Rôle |
+| --- | --- |
+| `aws_instance.web` | Instance EC2 Ubuntu (`t3.micro`) qui héberge l'application |
+| `aws_eip.web_eip` | Adresse IP publique fixe |
+| `aws_security_group.web_sg` | Ouvre les ports 22 (SSH), 80 (HTTP) et 443 (HTTPS) |
+| `aws_ecr_repository.app_repo` | Dépôt d'images Docker `mon-app-react` (scan à chaque push) |
+| `aws_codebuild_project.app_build` | Projet de build (mode privilégié pour Docker) |
+| `aws_codedeploy_app` / `deployment_group` | Déploiement sur les instances taguées `Name=web-server-react` |
+| `aws_codepipeline.app_pipeline` | Orchestration Source → Build → Deploy |
+| `aws_s3_bucket.pipeline_artifacts` | Stockage des artefacts du pipeline |
+| Rôles IAM | Un rôle par service (EC2, CodeBuild, CodeDeploy, CodePipeline) |
+
+Au premier démarrage, le script `install_docker.sh` (user_data) installe Docker, l'AWS CLI et l'agent CodeDeploy, crée le réseau Docker `web`, lance **Traefik** (reverse proxy avec certificat HTTPS Let's Encrypt) puis démarre le conteneur de l'application.
+
+### Déployer l'infrastructure
+
+Prérequis : Terraform, l'AWS CLI configurée avec des identifiants valides, et une paire de clés SSH `devops-key` existante dans AWS.
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+Les sorties affichent l'IP publique de l'instance (`instance_public_ip`) et l'URL du dépôt ECR (`ecr_repository_url`). Le nom de domaine doit pointer vers cette IP pour que Traefik obtienne le certificat HTTPS.
+
+Pour tout supprimer :
+
+```bash
+terraform destroy
+```
+
+> La connexion GitHub (`ConnectionArn`) utilisée par CodePipeline doit être créée et validée au préalable dans la console AWS (Developer Tools → Connections).
+
+> Lors du tout premier `terraform apply`, le dépôt ECR est encore vide : le `docker pull` du script `install_docker.sh` échoue et l'application ne démarre qu'après le premier passage du pipeline (lancement manuel avec « Release change » dans CodePipeline si besoin).
+
+## Pipeline CI/CD
+
+```text
+push sur main ──► CodePipeline
+                    │
+                    ├─ Source  : récupération du dépôt GitHub (CodeConnections)
+                    ├─ Build   : CodeBuild (buildspec.yml)
+                    │             npm install → npm test → docker build → push ECR
+                    └─ Deploy  : CodeDeploy (appspec.yml) sur l'EC2
+                                  start_container.sh → pull de l'image → redémarrage si nouvelle
+```
+
+### Déclenchement
+
+Le pipeline se lance uniquement sur un push vers `main` qui modifie des fichiers utiles à l'application :
+
+- inclus : `src/**`, `Dockerfile`, `package*.json`, `appspec.yml`, `buildspec.yml`, `scripts/**`, `index.html`, `vite.config.js` ;
+- exclus : `terraform/**`, `README.md`.
+
+Modifier ce README ou l'infrastructure ne déclenche donc pas de nouveau déploiement.
+
+### Build (`buildspec.yml`)
+
+1. Installation des dépendances (`npm install`) ;
+2. Exécution des tests (`npm test`) — le build s'arrête si un test échoue ;
+3. Connexion à ECR ;
+4. Construction de l'image, taguée `latest` et avec les 8 premiers caractères du hash du commit ;
+5. Push des deux tags vers ECR.
+
+### Déploiement (`appspec.yml`)
+
+CodeDeploy copie les fichiers dans `/home/ubuntu/app` puis exécute `scripts/start_container.sh`, qui :
+
+1. se connecte à ECR et télécharge l'image `latest` ;
+2. compare son identifiant avec celui du conteneur en cours d'exécution ;
+3. si l'image est identique, ne fait rien ; sinon, supprime l'ancien conteneur et relance le nouveau sur le réseau `web` avec les labels Traefik (HTTPS sur `mon-app-react.ainz05.com`).
